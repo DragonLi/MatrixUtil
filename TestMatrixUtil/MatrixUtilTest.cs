@@ -14,10 +14,12 @@ namespace MatrixUtil
 
         public static void TestMatrix()
         {
+            //提前计算卷积用到矩阵（权重矩阵）
             var kernel = PrepareKernel();
 
             var width = maxWidth;
             var height = maxHeight;
+            //准备评分点 每个屏幕坐标有30%的机会填上一个评分
             var scoreList = PrepareScoreList(height, width);
 
             TestMatrix(height, width, scoreList, kernel);
@@ -25,13 +27,19 @@ namespace MatrixUtil
 
         private static Matrix TestMatrix(int height, int width, List<(int, int, float)> scoreList, Matrix kernel)
         {
+            //全局的分子矩阵（对应屏幕大小）
             var nominatorAll = new Matrix(height, width);
+            //全局的分母矩阵（对应屏幕大小）
             var denominatorAll = new Matrix(height, width);
             foreach (var (rowInd, colInd, score) in scoreList)
             {
+                //计算分子的增量：就是权重矩阵与评分的标量乘法
                 var nominator = kernel.MultiplyScalar(score);
+                //分母增量就是权重矩阵自身
                 var denominator = kernel;
+                //把分子增量加到全局的分子矩阵中
                 nominatorAll.PartialAdd(rowInd, colInd, nominator);
+                //把分母增量加到全局的分母矩阵中
                 denominatorAll.PartialAdd(rowInd, colInd, denominator);
             }
 
@@ -41,6 +49,7 @@ namespace MatrixUtil
             denominatorAll.DebugPrint();
 
             var idwWithKernel = nominatorAll;
+            //全局分子矩阵除以全局分母矩阵，得到每个点的插值
             idwWithKernel.DivideBy(denominatorAll);
             Console.WriteLine("idwWithKernel:");
             idwWithKernel.DebugPrint();
@@ -127,6 +136,7 @@ namespace MatrixUtil
             {
                 for (var j = 0; j < kernelSize; j++)
                 {
+                    //每个点的权重是距离倒数再五次方 相当于距离平方再算2.5次方
                     var t = (float) (Math.Pow(Math.Abs(i - half), power) + Math.Pow(Math.Abs(j - half), power));
                     //test t == 0
                     kernel[i, j] = t < float.Epsilon ? 1 : 1/t;
