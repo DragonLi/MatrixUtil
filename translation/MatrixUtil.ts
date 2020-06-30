@@ -154,17 +154,29 @@ module MatrixUtil {
             }
         }
 
-        public DivideBy(other: PackedMatrix) {
+        public DivideBy(other: PackedMatrix, cellSize) {
             if (((this.rowCount != other.rowCount)
                 || (this.columnCount != other.columnCount))) {
                 throw new Error("size not match!");
             }
 
+            let data = []
+            let x = 0
+            let y =0
+            let bound = this.columnCount * cellSize
             for (let i = 0, len = this.linearData.length; i < len; i++) {
                 //test other.linearData[i] == 0
-                this.linearData[i] = Math.abs(other.linearData[i]) < 1E-45 ? 1 : this.linearData[i] / other.linearData[i];
+                let val = Math.abs(other.linearData[i]) < 1E-45 ? 1 : this.linearData[i] / other.linearData[i];
+                let xVal = Number(x)
+                let yVal = Number(y)
+                data.push({xVal,yVal,val})
+                y+=cellSize
+                if (y == bound) {
+                    x+=cellSize
+                    y = 0
+                }
             }
-
+            return data;
         }
     }
 }

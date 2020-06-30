@@ -137,7 +137,9 @@ namespace MatrixUtil
                 for (var j = 0; j < kernelSize; j++)
                 {
                     //每个点的权重是距离倒数再五次方 相当于距离平方再算2.5次方
-                    var t = (float) (Math.Pow(Math.Abs(i - half), power) + Math.Pow(Math.Abs(j - half), power));
+                   var x = i - half;
+                   var y = j - half;
+                    var t = (float) Math.Pow(x*x+y*y, power);
                     //test t == 0
                     kernel[i, j] = t < float.Epsilon ? 1 : 1/t;
                 }
