@@ -1,14 +1,30 @@
 module MatrixUtil {
-    
+
     export class Matrix {
-        
-        private rowVec: number[][];
-        
-        private rowCount: number;
-        
-        private columnCount: number;
-        
-        public constructor (rowCount: number, columnCount: number) {
+
+        private readonly rowVec: number[][];
+
+        private readonly rowCount: number;
+
+        private readonly columnCount: number;
+
+        get RowCount(): number {
+            return this.rowCount;
+        }
+
+        get ColumnCount(): number {
+            return this.columnCount;
+        }
+
+        public getValueAt(a: number, b: number): number {
+            return this.rowVec[a][b];
+        }
+
+        public setValueAt(a: number, b: number, val: number) {
+            this.rowVec[a][b] = val;
+        }
+
+        public constructor(rowCount: number, columnCount: number) {
             this.rowCount = rowCount;
             this.columnCount = columnCount;
             this.rowVec = new Array(this.rowCount);
@@ -16,7 +32,7 @@ module MatrixUtil {
                 this.rowVec[i] = new Array(this.columnCount);
             }
         }
-        
+
         public MultiplyScalar(val: number): Matrix {
             let r = new Matrix(this.rowCount, this.columnCount);
             for (let i = 0; i < this.rowCount; ++i) {
@@ -28,7 +44,7 @@ module MatrixUtil {
             }
             return r;
         }
-        
+
         public PartialAdd(centerRow: number, centerCol: number, other: Matrix) {
             PackedMatrix.RangeCheck(centerRow, this.rowCount);
             PackedMatrix.RangeCheck(centerCol, this.columnCount);
@@ -44,13 +60,13 @@ module MatrixUtil {
                 }
             }
         }
-        
+
         public DivideBy(other: Matrix) {
-            if (((this.rowCount != other.rowCount) 
-                        || (this.columnCount != other.columnCount))) {
+            if (((this.rowCount != other.rowCount)
+                || (this.columnCount != other.columnCount))) {
                 throw new Error("size not match!");
             }
-            
+
             for (let i = 0; (i < this.rowCount); i++) {
                 let thisRow = this.rowVec[i];
                 let otherRow = other.rowVec[i];
@@ -63,45 +79,61 @@ module MatrixUtil {
     }
 
     export class PackedMatrix {
-        
-        private linearData: number[];
-        
-        private rowCount: number;
-        
-        private columnCount: number;
+
+        private readonly linearData: number[];
+
+        private readonly rowCount: number;
+
+        private readonly columnCount: number;
+
+        get RowCount(): number {
+            return this.rowCount;
+        }
+
+        get ColumnCount(): number {
+            return this.columnCount;
+        }
+
+        public getValueAt(a: number, b: number): number {
+            return this.linearData[a * this.columnCount + b];
+        }
+
+        public setValueAt(a: number, b: number, val: number) {
+            this.linearData[a * this.columnCount + b] = val;
+        }
 
         public static RangeCheck(val: number, maxExclusive: number) {
-            if (((val < 0)  || (val >= maxExclusive))) {
+            if (((val < 0) || (val >= maxExclusive))) {
                 throw new Error("out of range");
             }
         }
-        
-        public static GetRange(center: number, len: number, max: number): [number,number,number] {
+
+        public static GetRange(center: number, len: number, max: number): [number, number, number] {
             let half = (len / 2);
             let otherStart = (center - half);
             let otherEnd = (otherStart + len);
-            let start: number =  otherStart < 0 ? 0 : otherStart;
-            
+            let start: number = otherStart < 0 ? 0 : otherStart;
+
             otherStart = (start - otherStart);
-            let end: number = otherEnd > max ? max : otherEnd;            
+            let end: number = otherEnd > max ? max : otherEnd;
             return [start, end, otherStart];
         }
 
-        public constructor (rowCount: number, columnCount: number) {
+        public constructor(rowCount: number, columnCount: number) {
             this.rowCount = rowCount;
             this.columnCount = columnCount;
             this.linearData = new Array((this.rowCount * this.columnCount));
         }
-        
+
         public MultiplyScalar(val: number): PackedMatrix {
             let r = new PackedMatrix(this.rowCount, this.columnCount);
-            for (let i=0, len: number = this.linearData.length; (i < len); i++) {
+            for (let i = 0, len: number = this.linearData.length; (i < len); i++) {
                 r.linearData[i] = (this.linearData[i] * val);
             }
-            
+
             return r;
         }
-        
+
         public PartialAdd(centerRow: number, centerCol: number, other: PackedMatrix) {
             PackedMatrix.RangeCheck(centerRow, this.rowCount);
             PackedMatrix.RangeCheck(centerCol, this.columnCount);
@@ -111,31 +143,28 @@ module MatrixUtil {
             let [startCol, lastCol, otherColStart] = PackedMatrix.GetRange(centerCol, width, this.columnCount);
 
             for (let i = startRow * this.columnCount + startCol,
-                len = lastRow * this.columnCount + startCol,
-                k = otherRowStart * width + otherColStart,
-                delta = lastCol - startCol;
-                i < len;
-                i += this.columnCount, k += width)
-            {
-                for (let j = i, updateLen = i + delta, l = k; j < updateLen; ++j, ++l)
-                {
+                     len = lastRow * this.columnCount + startCol,
+                     k = otherRowStart * width + otherColStart,
+                     delta = lastCol - startCol;
+                 i < len;
+                 i += this.columnCount, k += width) {
+                for (let j = i, updateLen = i + delta, l = k; j < updateLen; ++j, ++l) {
                     this.linearData[j] += other.linearData[l];
                 }
             }
         }
-        
+
         public DivideBy(other: PackedMatrix) {
-            if (((this.rowCount != other.rowCount) 
-                        || (this.columnCount != other.columnCount))) {
+            if (((this.rowCount != other.rowCount)
+                || (this.columnCount != other.columnCount))) {
                 throw new Error("size not match!");
             }
-            
-            for (let i = 0, len = this.linearData.length; i < len; i++)
-            {
+
+            for (let i = 0, len = this.linearData.length; i < len; i++) {
                 //test other.linearData[i] == 0
                 this.linearData[i] = Math.abs(other.linearData[i]) < 1E-45 ? 1 : this.linearData[i] / other.linearData[i];
             }
-            
+
         }
     }
 }
